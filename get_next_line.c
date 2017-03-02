@@ -5,85 +5,92 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: heinfalt <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2016/12/15 10:22:11 by heinfalt          #+#    #+#             */
-/*   Updated: 2016/12/15 10:22:13 by heinfalt         ###   ########.fr       */
+/*   Created: 2017/02/20 16:04:03 by heinfalt          #+#    #+#             */
+/*   Updated: 2017/02/20 16:04:05 by heinfalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include "libft/libft.h"
 
-static void			apd_lst(t_list **alst, t_list *new)
+char			*ft_strjoin_free(char *s1, char *s2, char flag)
 {
-	if (alst && new)
+	char		*out;
+
+	out = ft_strjoin(s1, s2);
+	if (flag == 'l' || flag == 'b')
+		free(s1);
+	if (flag == 'r' || flag == 'b')
+		free(s2);
+	return (out);
+}
+
+int				fill_buffer(int fd, char **line, char **stock)
+{
+	char		buff[BUFF_SIZE + 1];
+	char		*chr;
+	int			ret;
+
+	while ((ret = read(fd, buff, BUFF_SIZE)) != 0)
 	{
-		while ((**alst).next)
-			*alst = (**alst).next;
-		(**alst).next = new;
+		if (ret < 0)
+			return (-1);
+		buff[ret] = 0;
+		chr = ft_strchr(buff, '\n');
+		if (!chr)
+			*line = ft_strjoin_free(*line, buff, 'l');
+		else
+		{
+			*chr = 0;
+			*line = ft_strjoin_free(*line, buff, 'l');
+			stock[fd] = ft_strdup(++chr);
+			return (1);
+		}
 	}
+	return (ft_strlen(*line) == 0 ? 0 : 1);
 }
 
-static t_list		*init_lst(t_list **elem, const int fd)
+int				extract_stock(int fd, char **line, char **stock)
 {
-	while (fd != (**elem).content->fd)
-		*elem = (**elem).next;
-	return (*elem);
+	char		*chr;
+	int			ret;
+
+	while (stock[fd])
+	{
+		chr = ft_strchr(stock[fd], '\n');
+		if (!chr)
+		{
+			*line = ft_strjoin_free(*line, stock[fd], 'l');
+			stock[fd] = NULL;
+			ret = fill_buffer(fd, line, stock);
+			return (ret);
+		}
+		else
+		{
+			*chr = 0;
+			*line = ft_strjoin_free(*line, stock[fd], 'l');
+			stock[fd] = ft_strdup(++chr);
+			return (1);
+		}
+	}
+	return (0);
 }
 
-static char			**apd_line(char **line, int *head, int *check, char *buf)
+int				get_next_line(const int fd, char **line)
 {
-	int i;
+	static char	*stock[MAX_FD];
+	int			ret;
+	int			i;
 
 	i = 0;
-	while (buf[i] != '\n' && buf[i])
-		*line[*head++] = buf[i++];
-	if (buf[i] == '\n')
-		*check += 1;
-	return (line);
-}
-
-static int			lecture(const int fd, char **line, t_list **elem)
-{
-	char			*buf;
-	int				check;
-	int				nbr_chr_rd;
-
-	check = 0;
-	nbr_chr_rd = BUFF_SIZE;
-	buf = (char *)ft_memalloc(sizeof(char) * BUFF_SIZE + 1);
-	while (nbr_chr_rd == BUFF_SIZE && check != 1)
-	{
-		nbr_chr_rd = read(fd, buf, BUFF_SIZE);
-		if (nbr_chr_rd == -1)
-		{
-			free(buf);
-			return (-1);
-		}
-		buf[nbr_chr_rd] = '\0';
-		apd_line(line, &((**elem).content->head), &check, buf);
-	}
-	if (check)
-		(**elem).content->save_buf = buf;
-	free(buf);
-	return (1);
-}
-
-int					get_next_line(const int fd, char **line)
-{
-	static	t_list	**elem;
-	t_list			**save;
-	t_fd_n_save 	*data;
-	int				ret;
-
-	save = elem;
-	data->fd = fd;
-	data->head = 0;
-	data->save_buf = NULL;
-	if ((**elem).next == NULL)
-		*elem = ft_lstnew(data, sizeof(t_fd_n_save));
-	else if (fd != (**elem).content->fd)
-		apd_lst(elem, ft_lstnew(data, sizeof(t_fd_n_save)));
-	elem = save;
-	*elem = init_lst(elem, fd);
-	return (lecture(fd, line, elem));
+	ret = 0;
+	if (fd < 0 || line == NULL)
+		return (-1);
+	*line = ft_strdup("");
+	if (*line == NULL)
+		return (-1);
+	if (!stock[fd])
+		ret = fill_buffer(fd, line, stock);
+	else
+		ret = extract_stock(fd, line, stock);
+	return (ret);
 }

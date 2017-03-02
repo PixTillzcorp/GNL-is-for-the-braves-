@@ -13,14 +13,13 @@
 #ifndef GET_NEXT_LINE_H
 # define GET_NEXT_LINE_H
 
-# define BUFF_SIZE 32
+# define BUFF_SIZE 10000
+# define MAX_FD 4096
 
-typedef	struct	s_fd_n_save
-{
-	int		fd;
-	int		head;
-	char	*save_buf;
-}				t_fd_n_save;
+# include "libft/libft.h"
+# include <fcntl.h>
+# include <stdio.h>
+# include <unistd.h>
 
 int		get_next_line(const int fd, char **line);
 

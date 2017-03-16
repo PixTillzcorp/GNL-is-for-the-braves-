@@ -24,28 +24,52 @@ char			*ft_strjoin_free(char *s1, char *s2, char flag)
 	return (out);
 }
 
+char			*ft_strdup_free(char *str, int flag)
+{
+	char		*cpy;
+	int			i;
+
+	i = 0;
+	cpy = (char *)malloc(sizeof(char) * (ft_strlen(str) + 1));
+	if (cpy == NULL)
+		return (NULL);
+	while (str[i])
+	{
+		cpy[i] = str[i];
+		i++;
+	}
+	cpy[i] = '\0';
+	if (flag)
+		free(str);
+	return (cpy);
+}
+
 int				fill_buffer(int fd, char **line, char **stock)
 {
-	char		buff[BUFF_SIZE + 1];
+	char		*buff;
 	char		*chr;
 	int			ret;
 
+	if (!(buff = (char *)ft_memalloc(sizeof(char) * (BUFF_SIZE + 1))))
+		return (-1);
 	while ((ret = read(fd, buff, BUFF_SIZE)) != 0)
 	{
 		if (ret < 0)
 			return (-1);
 		buff[ret] = 0;
-		chr = ft_strchr(buff, '\n');
-		if (!chr)
+		if (!(chr = ft_strchr(buff, '\n')))
 			*line = ft_strjoin_free(*line, buff, 'l');
 		else
 		{
-			*chr = 0;
-			*line = ft_strjoin_free(*line, buff, 'l');
-			stock[fd] = ft_strdup(++chr);
+			*chr++ = 0;
+			if (stock[fd])
+				ft_memdel((void**)&(stock[fd]));
+			stock[fd] = ft_strdup(chr);
+			*line = ft_strjoin_free(*line, buff, 'b');
 			return (1);
 		}
 	}
+	free(buff);
 	return (ft_strlen(*line) == 0 ? 0 : 1);
 }
 
@@ -54,23 +78,19 @@ int				extract_stock(int fd, char **line, char **stock)
 	char		*chr;
 	int			ret;
 
-	while (stock[fd])
+	chr = ft_strchr(stock[fd], '\n');
+	if (!chr)
 	{
-		chr = ft_strchr(stock[fd], '\n');
-		if (!chr)
-		{
-			*line = ft_strjoin_free(*line, stock[fd], 'l');
-			stock[fd] = NULL;
-			ret = fill_buffer(fd, line, stock);
-			return (ret);
-		}
-		else
-		{
-			*chr = 0;
-			*line = ft_strjoin_free(*line, stock[fd], 'l');
-			stock[fd] = ft_strdup(++chr);
-			return (1);
-		}
+		*line = ft_strjoin_free(*line, stock[fd], 'l');
+		ret = fill_buffer(fd, line, stock);
+		return (ret);
+	}
+	else
+	{
+		*chr++ = 0;
+		*line = ft_strjoin_free(*line, stock[fd], 'l');
+		stock[fd] = ft_strdup(chr);
+		return (1);
 	}
 	return (0);
 }
@@ -92,5 +112,10 @@ int				get_next_line(const int fd, char **line)
 		ret = fill_buffer(fd, line, stock);
 	else
 		ret = extract_stock(fd, line, stock);
+	if (ret <= 0)
+	{
+		ft_strdel(line);
+		ft_memdel((void**)&(stock[fd]));
+	}
 	return (ret);
 }

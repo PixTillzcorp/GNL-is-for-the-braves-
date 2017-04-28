@@ -43,7 +43,7 @@ int				fill_buffer(int fd, char **line, char **stock)
 		{
 			*chr++ = 0;
 			if (stock[fd])
-				ft_memdel((void**)&(stock[fd]));
+				free(stock[fd]);
 			stock[fd] = ft_strdup(chr);
 			*line = ft_strjoin_free(*line, buff, 'b');
 			return (1);
@@ -56,9 +56,11 @@ int				fill_buffer(int fd, char **line, char **stock)
 int				extract_stock(int fd, char **line, char **stock)
 {
 	char		*chr;
+	char		*temp;
 	int			ret;
 
 	chr = ft_strchr(stock[fd], '\n');
+	temp = (chr ? ft_strdup(chr + 1) : NULL);
 	if (!chr)
 	{
 		*line = ft_strjoin_free(*line, stock[fd], 'l');
@@ -68,9 +70,10 @@ int				extract_stock(int fd, char **line, char **stock)
 	}
 	else
 	{
-		*chr++ = 0;
-		*line = ft_strjoin_free(*line, stock[fd], 'l');
-		stock[fd] = ft_strdup(chr);
+		*chr = 0;
+		*line = ft_strjoin_free(*line, stock[fd], 'b');
+		stock[fd] = ft_strdup(temp);
+		free(temp);
 		return (1);
 	}
 	return (0);
@@ -80,9 +83,7 @@ int				get_next_line(const int fd, char **line)
 {
 	static char	*stock[MAX_FD];
 	int			ret;
-	int			i;
 
-	i = 0;
 	ret = 0;
 	if (fd < 0 || line == NULL)
 		return (-1);

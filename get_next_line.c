@@ -24,26 +24,6 @@ char			*ft_strjoin_free(char *s1, char *s2, char flag)
 	return (out);
 }
 
-char			*ft_strdup_free(char *str, int flag)
-{
-	char		*cpy;
-	int			i;
-
-	i = 0;
-	cpy = (char *)malloc(sizeof(char) * (ft_strlen(str) + 1));
-	if (cpy == NULL)
-		return (NULL);
-	while (str[i])
-	{
-		cpy[i] = str[i];
-		i++;
-	}
-	cpy[i] = '\0';
-	if (flag)
-		free(str);
-	return (cpy);
-}
-
 int				fill_buffer(int fd, char **line, char **stock)
 {
 	char		*buff;
@@ -82,6 +62,7 @@ int				extract_stock(int fd, char **line, char **stock)
 	if (!chr)
 	{
 		*line = ft_strjoin_free(*line, stock[fd], 'l');
+		ft_memdel((void**)&(stock[fd]));
 		ret = fill_buffer(fd, line, stock);
 		return (ret);
 	}
@@ -106,8 +87,6 @@ int				get_next_line(const int fd, char **line)
 	if (fd < 0 || line == NULL)
 		return (-1);
 	*line = ft_strdup("");
-	if (*line == NULL)
-		return (-1);
 	if (!stock[fd])
 		ret = fill_buffer(fd, line, stock);
 	else

@@ -32,10 +32,8 @@ int				fill_buffer(int fd, char **line, char **stock)
 
 	if (!(buff = (char *)ft_memalloc(sizeof(char) * (BUFF_SIZE + 1))))
 		return (-1);
-	while ((ret = read(fd, buff, BUFF_SIZE)) != 0)
+	while ((ret = read(fd, buff, BUFF_SIZE)) > 0)
 	{
-		if (ret < 0)
-			return (-1);
 		buff[ret] = 0;
 		if (!(chr = ft_strchr(buff, '\n')))
 			*line = ft_strjoin_free(*line, buff, 'l');
@@ -50,6 +48,8 @@ int				fill_buffer(int fd, char **line, char **stock)
 		}
 	}
 	free(buff);
+	if (ret < 0)
+		return (-1);
 	return (ft_strlen(*line) == 0 ? 0 : 1);
 }
 
@@ -85,7 +85,7 @@ int				get_next_line(const int fd, char **line)
 	int			ret;
 
 	ret = 0;
-	if (fd < 0 || line == NULL)
+	if (fd < 0 || line == NULL || fd >= MAX_FD)
 		return (-1);
 	*line = ft_strdup("");
 	if (!stock[fd])
